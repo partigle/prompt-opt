@@ -1,0 +1,39 @@
+# 提示词优化平台配置
+# API Keys (请在 .env 文件中设置)
+
+# 阿里云 DashScope (QWEN)
+# DASHSCOPE_API_KEY=your_key_here
+
+# DeepSeek
+# DEEPSEEK_API_KEY=your_key_here
+
+# 豆包 (后续支持)
+# DOUBAO_API_KEY=your_key_here
+
+# 默认模型
+default_model: qwen-max
+
+# 支持的场景
+scenes:
+  - product/weekly
+  - product/review
+  - product/launch
+  - marketing/weekly
+  - marketing/campaign
+  - marketing/brand
+  - marketing/partnership
+  - sales/meeting
+  - sales/negotiation
+  - sales/channel
+  - strategy/meeting
+  - strategy/management
+  - strategy/review
+  - hr/interview
+  - hr/performance
+  - hr/exit
+  - hr/team
+  - rd/tech-review
+  - rd/planning
+  - rd/incident
+  - other/finance
+  - other/legal
