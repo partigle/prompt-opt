@@ -4,6 +4,8 @@ import { readFileSync, existsSync } from 'fs';
 import { basename } from 'path';
 import { evaluateSummary } from '../lib/llmClient.js';
 import { saveEvaluation } from '../lib/storage.js';
+import { getLogger } from '../logs/index.js';
+import { detectScene } from '../lib/sceneDetector.js';
 
 const evaluateCmd = new Command('evaluate')
   .description('对比评估生成总结与参考总结')
@@ -11,15 +13,36 @@ const evaluateCmd = new Command('evaluate')
   .requiredOption('-r, --reference <file>', '参考总结文件 (MD)')
   .option('-o, --output <file>', '评估结果输出文件 (JSON)')
   .option('-m, --model <model>', '评估使用的模型', 'qwen-max')
+  .option('-s, --scene <scene>', '场景类型 (不指定则自动检测)')
   .option('-p, --prompt <file>', '使用的提示词文件（用于记录）')
   .action(async (options: {
     generated: string;
     reference: string;
     output?: string;
     model: string;
+    scene?: string;
     prompt?: string;
   }) => {
+    const logger = getLogger();
+    logger.start('evaluate', [], options);
+    
     console.log(chalk.blue('📊 评估对比中...\n'));
+    
+    let detectedScene = options.scene;
+    
+    // 自动检测场景
+    if (!detectedScene) {
+      console.log(chalk.gray('🔍 自动检测场景...'));
+      try {
+        const generatedContent = readFileSync(options.generated, 'utf-8');
+        const result = await detectScene(generatedContent);
+        detectedScene = result.scene;
+        console.log(chalk.gray(`   检测到场景: ${detectedScene}`));
+      } catch (e) {
+        detectedScene = 'other';
+        console.log(chalk.yellow(`   检测失败，使用默认场景: ${detectedScene}`));
+      }
+    }
     
     try {
       // 1. 读取生成总结
@@ -71,7 +94,24 @@ const evaluateCmd = new Command('evaluate')
         console.log(chalk.green(`\n💾 评估结果已保存: ${outputPath}`));
       }
       
+      // Save to logger for tracking
+      logger.saveEvaluation({
+        promptId: basename(options.generated),
+        scene: detectedScene,
+        scores: {
+          total: result.total,
+          completeness: result.completeness,
+          detail: result.detail,
+          thoroughness: result.thoroughness
+        },
+        summary: result.grade,
+        timestamp: new Date().toISOString()
+      });
+      
+      logger.end(true, { outputPath, scores: result });
+      
     } catch (error) {
+      logger.end(false, null, (error as Error).message);
       console.error(chalk.red(`\n❌ 错误: ${(error as Error).message}`));
       process.exit(1);
     }

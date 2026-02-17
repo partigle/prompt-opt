@@ -2,12 +2,16 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { detectScene } from '../lib/sceneDetector.js';
+import { getLogger } from '../logs/index.js';
 
 const detectCmd = new Command('detect')
   .description('检测对话场景类型')
   .argument('<file>', '对话数据文件路径 (TXT)')
   .option('-o, --output <file>', '输出结果到文件 (JSON)')
   .action(async (file: string, options: { output?: string }) => {
+    const logger = getLogger();
+    logger.start('detect', [file], options);
+    
     console.log(chalk.blue('🔍 场景检测中...\n'));
     
     try {
@@ -34,7 +38,10 @@ const detectCmd = new Command('detect')
         console.log(chalk.green(`\n✅ 结果已保存到: ${options.output}`));
       }
       
+      logger.end(true, result);
+      
     } catch (error) {
+      logger.end(false, null, (error as Error).message);
       console.error(chalk.red(`❌ 错误: ${(error as Error).message}`));
       process.exit(1);
     }

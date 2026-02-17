@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { basename } from 'path';
 import { optimizePrompt } from '../lib/llmClient.js';
 import { savePromptVersion } from '../lib/storage.js';
+import { getLogger } from '../logs/index.js';
 
 const optimizeCmd = new Command('optimize')
   .description('优化提示词（基于评估结果）')
@@ -21,6 +22,9 @@ const optimizeCmd = new Command('optimize')
     save: boolean;
     scene?: string;
   }) => {
+    const logger = getLogger();
+    logger.start('optimize', [], options);
+    
     console.log(chalk.blue('✨ 提示词优化中...\n'));
     
     try {
@@ -43,17 +47,20 @@ const optimizeCmd = new Command('optimize')
       const optimizedPrompt = await optimizePrompt(promptContent, evaluation, options.model);
       
       // 4. 输出结果
+      let outputPath = '';
       if (options.save) {
         if (!options.scene) {
           throw new Error('保存版本需要指定 --scene');
         }
         const result = savePromptVersion(options.scene, optimizedPrompt, `基于评估结果自动优化`);
+        outputPath = result.filepath;
         console.log(chalk.green(`\n✅ 新版本已保存:`));
         console.log(`  场景: ${options.scene}`);
         console.log(`  版本: v${result.version}`);
         console.log(`  路径: ${result.filepath}`);
       } else if (options.output) {
         writeFileSync(options.output, optimizedPrompt, 'utf-8');
+        outputPath = options.output;
         console.log(chalk.green(`\n✅ 优化建议已保存: ${options.output}`));
       } else {
         console.log(chalk.green('\n📝 优化后的提示词:\n'));
@@ -61,7 +68,10 @@ const optimizeCmd = new Command('optimize')
         console.log(chalk.gray('\n使用 -o <file> 保存到文件，或使用 --save --scene <scene> 保存为新版本'));
       }
       
+      logger.end(true, { outputPath, scene: options.scene, evaluationScore: evaluation.total });
+      
     } catch (error) {
+      logger.end(false, null, (error as Error).message);
       console.error(chalk.red(`\n❌ 错误: ${(error as Error).message}`));
       process.exit(1);
     }

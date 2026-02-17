@@ -3,13 +3,18 @@ import chalk from 'chalk';
 import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { initDirs, DIRS } from '../lib/storage.js';
+import { getLogger } from '../logs/index.js';
 
 const initCmd = new Command('init')
   .description('初始化项目结构')
   .argument('[name]', '项目名称')
   .option('-f, --force', '强制初始化（覆盖现有文件）')
   .action((name: string | undefined, options: { force: boolean }) => {
-    console.log(chalk.blue('🚀 初始化提示词优化平台...\n'));
+    const logger = getLogger();
+    logger.start('init', name ? [name] : [], options);
+    
+    try {
+      console.log(chalk.blue('🚀 初始化提示词优化平台...\n'));
     
     // 项目名称
     const projectName = name || 'prompt-optimizer';
@@ -158,6 +163,13 @@ po version save -p 提示词.md -s product/weekly -m "添加xxx"
     console.log('  2. 在 .env 中填入 API Keys');
     console.log('  3. npm run build 编译 TS');
     console.log('  4. po --help 查看命令');
+    
+    logger.end(true, { projectName });
+    } catch (error) {
+      logger.end(false, null, (error as Error).message);
+      console.error(chalk.red(`\n❌ 初始化失败: ${(error as Error).message}`));
+      process.exit(1);
+    }
     
   });
 

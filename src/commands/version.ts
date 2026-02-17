@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { readFileSync, existsSync } from 'fs';
 import { listPromptVersions, savePromptVersion, downloadPromptVersion } from '../lib/storage.js';
+import { getLogger } from '../logs/index.js';
 
 const versionCmd = new Command('version')
   .description('提示词版本管理');
@@ -12,11 +13,15 @@ versionCmd
   .description('列出提示词版本')
   .argument('<scene>', '场景类型')
   .action((scene: string) => {
+    const logger = getLogger();
+    logger.start('version:list', [scene]);
+    
     try {
       const versions = listPromptVersions(scene);
       
       if (versions.length === 0) {
         console.log(chalk.yellow(`场景 ${scene} 没有版本记录`));
+        logger.end(true, { count: 0 });
         return;
       }
       
@@ -26,7 +31,10 @@ versionCmd
         console.log(`  ${chalk.cyan(v.version)} - ${chalk.gray(date)}`);
       });
       
+      logger.end(true, { count: versions.length });
+      
     } catch (error) {
+      logger.end(false, null, (error as Error).message);
       console.error(chalk.red(`错误: ${(error as Error).message}`));
     }
   });
@@ -39,6 +47,9 @@ versionCmd
   .requiredOption('-s, --scene <scene>', '场景类型')
   .option('-m, --message <msg>', '版本说明')
   .action((options: { prompt: string; scene: string; message?: string }) => {
+    const logger = getLogger();
+    logger.start('version:save', [options.prompt], options);
+    
     try {
       if (!existsSync(options.prompt)) {
         throw new Error(`提示词文件不存在: ${options.prompt}`);
@@ -52,7 +63,10 @@ versionCmd
       console.log(`  版本: v${result.version}`);
       console.log(`  路径: ${result.filepath}`);
       
+      logger.end(true, result);
+      
     } catch (error) {
+      logger.end(false, null, (error as Error).message);
       console.error(chalk.red(`错误: ${(error as Error).message}`));
       process.exit(1);
     }
@@ -66,11 +80,17 @@ versionCmd
   .requiredOption('-v, --version <version>', '版本号 (如 v1)')
   .requiredOption('-o, --output <file>', '输出文件路径')
   .action((options: { scene: string; version: string; output: string }) => {
+    const logger = getLogger();
+    logger.start('version:download', [], options);
+    
     try {
       const outputPath = downloadPromptVersion(options.scene, options.version, options.output);
       console.log(chalk.green(`✅ 已下载: ${outputPath}`));
       
+      logger.end(true, { outputPath });
+      
     } catch (error) {
+      logger.end(false, null, (error as Error).message);
       console.error(chalk.red(`错误: ${(error as Error).message}`));
       process.exit(1);
     }

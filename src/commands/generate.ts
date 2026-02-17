@@ -5,6 +5,7 @@ import { basename } from 'path';
 import { generateSummary } from '../lib/llmClient.js';
 import { detectScene } from '../lib/sceneDetector.js';
 import { saveOutput } from '../lib/storage.js';
+import { getLogger } from '../logs/index.js';
 
 const generateCmd = new Command('generate')
   .description('使用提示词生成总结')
@@ -20,6 +21,9 @@ const generateCmd = new Command('generate')
     output?: string;
     model: string;
   }) => {
+    const logger = getLogger();
+    logger.start('generate', [], options);
+    
     console.log(chalk.blue('📝 生成总结中...\n'));
     
     try {
@@ -57,7 +61,10 @@ const generateCmd = new Command('generate')
       console.log(chalk.green(`\n✅ 总结已生成:`));
       console.log(chalk.cyan(`   ${outputPath}`));
       
+      logger.end(true, { outputPath, scene, model: options.model });
+      
     } catch (error) {
+      logger.end(false, null, (error as Error).message);
       console.error(chalk.red(`\n❌ 错误: ${(error as Error).message}`));
       process.exit(1);
     }

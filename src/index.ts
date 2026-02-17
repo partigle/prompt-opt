@@ -20,6 +20,7 @@ import evaluateCommand from './commands/evaluate.js';
 import optimizeCommand from './commands/optimize.js';
 import versionCommand from './commands/version.js';
 import initCommand from './commands/init.js';
+import insightCommand from './commands/insight.js';
 
 const program = new Command();
 
@@ -40,6 +41,7 @@ program.addCommand(evaluateCommand);
 program.addCommand(optimizeCommand);
 program.addCommand(versionCommand);
 program.addCommand(initCommand);
+program.addCommand(insightCommand);
 
 // Global options
 program
