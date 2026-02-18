@@ -2,9 +2,8 @@
  * LLM 客户端 - Multi-Model Support
  * 
  * 支持: QWEN MAX, DeepSeek V3, 豆包 1.8 (后续)
+ * 使用原生 fetch API
  */
-
-import axios, { AxiosError } from 'axios';
 
 interface ModelConfig {
   name: string;
@@ -72,37 +71,45 @@ export async function generateSummary(
   ];
   
   try {
-    const response = await axios.post(
-      config.endpoint,
-      {
+    // 使用原生 fetch API
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5分钟超时
+    
+    const response = await fetch(config.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
         model: config.modelName,
         messages: messages,
         temperature: 0.7,
-        max_tokens: 8000,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        timeout: 120000
-      }
-    );
+        max_tokens: 8192
+      }),
+      signal: controller.signal
+    });
     
-    if (response.data.choices && response.data.choices[0]) {
-      return response.data.choices[0].message.content;
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`API 错误: ${response.status} - ${errorData}`);
+    }
+    
+    const result: any = await response.json();
+    
+    if (result.choices && result.choices[0]) {
+      return result.choices[0].message.content;
     }
     
     throw new Error('LLM 返回格式错误');
     
-  } catch (error) {
-    const axiosError = error as AxiosError;
-    if (axiosError.response) {
-      throw new Error(`API 错误: ${axiosError.response.status} - ${JSON.stringify(axiosError.response.data)}`);
-    } else if (axiosError.request) {
-      throw new Error(`网络错误: ${axiosError.message}`);
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      throw new Error('请求超时');
     }
-    throw error;
+    throw new Error(`调用失败: ${error.message}`);
   }
 }
 
@@ -162,9 +169,16 @@ ${reference}
   }
   
   try {
-    const response = await axios.post(
-      config.endpoint,
-      {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
+    
+    const response = await fetch(config.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
         model: config.modelName,
         messages: [
           { role: 'system', content: '你是一个专业的评估专家，只返回 JSON 格式结果。' },
@@ -173,21 +187,25 @@ ${reference}
         temperature: 0.3,
         max_tokens: 4000,
         response_format: { type: 'json_object' }
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        timeout: 120000
-      }
-    );
+      }),
+      signal: controller.signal
+    });
     
-    const result = response.data.choices[0].message.content;
-    return JSON.parse(result);
+    clearTimeout(timeoutId);
     
-  } catch (error) {
-    throw new Error(`评估失败: ${(error as Error).message}`);
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`API 错误: ${response.status} - ${errorData}`);
+    }
+    
+    const result: any = await response.json();
+    return JSON.parse(result.choices[0].message.content);
+    
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      throw new Error('评估超时');
+    }
+    throw new Error(`评估失败: ${error.message}`);
   }
 }
 
