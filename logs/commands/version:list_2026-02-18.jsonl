@@ -1,0 +1,1 @@
+{"timestamp":"2026-02-18T03:30:48.043Z","command":"version:list","input":{"args":["product/weekly"],"options":{}},"status":"success","output":{"success":true,"data":{"count":0},"duration":3}}

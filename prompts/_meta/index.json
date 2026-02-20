@@ -1,0 +1,24 @@
+{
+  "scenes": {
+    "product/weekly": {
+      "versions": [
+        {
+          "id": "v1",
+          "created_at": "2026-02-18T03:39:51.209Z",
+          "note": "优化提示词：提升详细程度和技术议题展开"
+        }
+      ],
+      "current_version": "v1"
+    },
+    "hr/interview": {
+      "versions": [
+        {
+          "id": "v3",
+          "created_at": "2026-02-20T02:12:23.321Z",
+          "note": "基于评估结果自动优化"
+        }
+      ],
+      "current_version": "v3"
+    }
+  }
+}

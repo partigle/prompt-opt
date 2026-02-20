@@ -1,0 +1,1 @@
+{"timestamp":"2026-02-17T15:51:33.997Z","command":"generate","input":{"args":[],"options":{"model":"qwen-max","data":"test-dialogue.txt","prompt":"prompts/rd/tech-review/default.md","scene":"rd/tech-review","output":"test-summary.md"}},"status":"error","output":{"success":false,"data":null,"error":"未设置 API Key: DASHSCOPE_API_KEY","duration":2}}
